@@ -1,6 +1,6 @@
 {
-  "name": "HTDA.Framework.Template",
-  "rootNamespace": "HTDA.Framework.Template",
+  "name": "HTDA.Framework.Events",
+  "rootNamespace": "HTDA.Framework.Events",
   "references": [],
   "includePlatforms": [],
   "excludePlatforms": [],

@@ -1,32 +1,144 @@
-# HTDA Framework Template (UPM)
+# UP-Events
 
-This repository is a **Unity Package Manager (UPM) template** for creating new HTDA Framework modules.
+Type-safe EventBus system for Unity.
 
-## Quick start
+UP-Events cung cấp một hệ thống EventBus nhẹ, type-safe (TEvents), hỗ trợ quản lý vòng đời subscription thông qua IDisposable, giúp giảm coupling giữa các hệ thống trong game.
 
-1. Copy this folder as a new repository (recommended repo name: `HTDA-Framework-<ModuleName>`).
-2. Run the wizard:
+---
 
-```bash
-python Tools/setup_wizard.py
+## ✨ Features
+
+- Generic type-safe EventBus (`Publish<T>`, `Subscribe<T>`)
+- Subscription trả về `IDisposable`
+- `CompositeDisposable` để gom nhiều subscription
+- Unity lifetime helpers:
+    - `DisposeOnDestroy`
+    - `DisposeOnDisable`
+    - Extension `AddTo(...)`
+- Không phụ thuộc Editor
+- Không thread-safe (thiết kế cho Unity main thread)
+
+---
+
+## 📦 Package Structure
+
+Runtime:
+
+```
+HTDA.Framework.Events
+├── IEventBus
+├── EventBus
+├── Subscription
+├── CompositeDisposable
+└── Unity/
+├── DisposeOnDestroy
+├── DisposeOnDisable
+└── DisposableExtensions
 ```
 
-3. The wizard will:
-- rename package id (com.htda.framework.<suffix>)
-- rename assemblies and namespaces (HTDA.Framework.<ModuleName>)
-- optionally remove Runtime or Editor parts based on package type
+Samples:
 
-## Conventions
+```
+Samples~/EventBusDemo
+```
 
-- Package id: com.htda.framework.<suffix> (e.g. core, editor.tools, patterns.pooling)
+---
 
-- Assembly: HTDA.Framework.<ModuleName> and HTDA.Framework.<ModuleName>.Editor
+## 🚀 Quick Start
 
-- Namespace root: HTDA.Framework.<ModuleName>
+### 1️⃣ Tạo EventBus
 
-## Notes
+```csharp
+using HTDA.Framework.Events;
 
-- Keep Core packages small and stable.
+IEventBus bus = new EventBus();
+```
 
-- Move optional utilities/patterns/extensions into separate modules.
+### 2️⃣ Định nghĩa TEvent
+```csharp
+public readonly struct PlayerDied
+{
+    public readonly int PlayerId;
+    public PlayerDied(int id) => PlayerId = id;
+}
+```
+### 3️⃣ Subscribe
+```csharp
+bus.Subscribe<PlayerDied>(e =>
+{
+    Debug.Log($"Player died: {e.PlayerId}");
+});
+```
 
+### 4️⃣ Publish
+```csharp
+bus.Publish(new PlayerDied(1));
+```
+
+### 🔄 Auto Unsubscribe (Recommended)
+
+Để tránh memory leak trong Unity:
+```csharp
+using HTDA.Framework.Events.Unity;
+
+var disposer = this.GetOrAddDisposeOnDestroy();
+
+bus.Subscribe<PlayerDied>(OnPlayerDied)
+   .AddTo(disposer);
+```
+
+Khi GameObject bị Destroy → subscription tự động Dispose.
+
+---
+
+## 🧱 CompositeDisposable
+```csharp
+var bag = new CompositeDisposable();
+
+bus.Subscribe<A>(OnA).AddTo(bag);
+bus.Subscribe<B>(OnB).AddTo(bag);
+
+bag.Dispose(); // Unsubscribe tất cả
+```
+
+⚠ Design Notes
+
+- Không thread-safe (Unity main thread only)
+
+- Event dispatch là synchronous
+
+- Không giữ reference weak — cần dispose đúng cách
+
+---
+
+## 🎯 Intended Usage
+
+UP-Events được dùng cho:
+
+- Gameplay events (Damage, Death, Score)
+
+- UI communication
+
+- Scene flow signals
+
+- Analytics hooks
+
+- Decoupled system messaging
+
+---
+## 📌 Dependency
+
+Depends on:
+
+- UP-Core
+
+Không phụ thuộc:
+
+- FSM
+
+- Pooling
+
+- SceneFlow
+---
+## 📄 License
+[LICENSE.md](LICENSE.md)

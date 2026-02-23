@@ -1,8 +1,8 @@
 {
-  "name": "HTDA.Framework.Template.Tests",
-  "rootNamespace": "HTDA.Framework.Template.Tests",
+  "name": "HTDA.Framework.Events.Tests",
+  "rootNamespace": "HTDA.Framework.Events.Tests",
   "references": [
-    "HTDA.Framework.Template"
+    "HTDA.Framework.Events"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],
