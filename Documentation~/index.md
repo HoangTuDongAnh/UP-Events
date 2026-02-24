@@ -1,119 +1,32 @@
-# UP-Events – Technical Overview
+# UP-Events – Documentation
 
-## 1. Architecture
+## 1. Design goals
 
-EventBus sử dụng Dictionary<Type, Delegate> để map event type với callback.
+- Type-safe, dễ dùng.
+- Ít allocations, không LINQ.
+- Subscription trả về `IDisposable` để quản lý vòng đời rõ ràng.
 
-Key design:
+## 2. API
 
-- Mỗi TEvent là một type riêng
-- Delegate chain được combine thông qua +=
-- Subscription được quản lý qua IDisposable
+### Publish
+- `Publish<T>(T evt)`
 
----
+### Subscribe
+- `Subscribe<T>(Action<T> handler) -> IDisposable`
 
-## 2. Core API
+### CompositeDisposable
+- Gom nhiều disposable để dispose một lần.
 
-### IEventBus
+## 3. Unity integration
 
-```csharp
-IDisposable Subscribe<T>(Action<T> handler);
-void Unsubscribe<T>(Action<T> handler);
-void Publish<T>(T evt);
-void Clear();
-```
+- `DisposeOnDestroy`: tự dispose khi GameObject bị destroy.
+- `DisposeOnDisable`: tự dispose khi bị disable.
 
----
-## 3. Subscription Lifecycle
+Khuyến nghị:
+- Luôn dispose subscription để tránh leak/handler chạy sai thời điểm.
+- Đặt event struct nhỏ, immutable (readonly struct) để tránh GC.
 
-Subscribe trả về:
-```csharp
-IDisposable
-```
-Khi Dispose:
+## 4. Khi nào nên dùng events vs direct call
 
-- Handler được remove khỏi delegate chain
-
-- Safe call nhiều lần (idempotent)
-
----
-
-## 4. Memory Management Strategy
-
-Unity không có GC event weak-reference mặc định.
-
-UP-Events giải quyết bằng:
-
-- IDisposable subscription
-
-- CompositeDisposable
-
-- DisposeOnDestroy
-
-- DisposeOnDisable
-
-=> Developer phải chủ động quản lý lifecycle.
-
----
-## 5. Best Practices
-
-✔ Dùng struct cho TEvent nếu nhỏ và immutable
-✔ Không giữ state trong EventBus
-✔ Không publish trong constructor
-✔ Dispose trong OnDestroy / OnDisable
-
----
-
-## 6. Limitations
-
-- Không thread-safe
-
-- Không hỗ trợ sticky events
-
-- Không có event priority
-
-- Không queue async
-
-Nếu cần advanced features → mở rộng trong version sau.
----
-## 7. Future Extensions (Optional)
-
-- StickyEventBus
-
-- AsyncEventBus
-
-- Event profiling tools
-
-- Event logging toggle (Editor only)
----
-## 8. Versioning Strategy
-
-v1.0.0:
-
-- Core EventBus
-
-- IDisposable subscriptions
-
-- CompositeDisposable
-
-- Unity lifecycle helpers
-
-- Sample demo
----
-## 9. Integration With Other Packages
-
-UP-FSM:
-
-- Có thể publish StateChangedEvent
-
-UP-SceneFlow:
-
-- Publish SceneLoadedEvent
-
-UP-Pooling:
-
-- Publish SpawnedEvent / DespawnedEvent
-
-UP-Core:
-
-- Singleton / ServiceRegistry có thể giữ EventBus instance
+- Dùng EventBus khi cần loose coupling (UI ↔ gameplay, analytics, achievements…)
+- Tránh bắn event cho flow cực nóng nếu không cần (micro-optimizations); dùng direct call hoặc callback.
